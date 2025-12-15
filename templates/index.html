@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ارسال کننده پیامک</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1><i class="fas fa-sms"></i> سیستم ارسال پیامک</h1>
+        <div class="status-indicator">
+          <span id="status-dot" class="status-dot status-stopped"></span>
+          <span id="status-text">متوقف</span>
+        </div>
+      </header>
+
+      <div class="dashboard">
+        <div class="stats">
+          <div class="stat-card">
+            <i class="fas fa-paper-plane"></i>
+            <h3>ارسال شده</h3>
+            <p id="sent-count">0</p>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-clock"></i>
+            <h3>باقیمانده</h3>
+            <p id="remaining-count">0</p>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-layer-group"></i>
+            <h3>دسته فعلی</h3>
+            <p id="batch-info">0/0</p>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-chart-line"></i>
+            <h3>کل ارسالی</h3>
+            <p id="total-sent">0</p>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <button class="tab-btn active" onclick="showTab('settings')">
+            <i class="fas fa-cog"></i> تنظیمات
+          </button>
+          <button class="tab-btn" onclick="showTab('message')">
+            <i class="fas fa-comment-dots"></i> متن پیامک
+          </button>
+          <button class="tab-btn" onclick="showTab('numbers')">
+            <i class="fas fa-phone"></i> شماره‌ها
+          </button>
+          <button class="tab-btn" onclick="showTab('logs')">
+            <i class="fas fa-clipboard-list"></i> گزارشات
+          </button>
+        </div>
+
+        <div class="tab-content">
+          <!-- تب متن پیامک -->
+          <div id="message-tab" class="tab-pane">
+            <div class="form-group">
+              <label><i class="fas fa-comment-dots"></i> متن پیامک</label>
+              <textarea
+                id="message-text"
+                rows="6"
+                placeholder="متن پیامک خود را وارد کنید..."
+              ></textarea>
+              <div class="message-counter">
+                <span id="char-count">0 کاراکتر</span>
+              </div>
+            </div>
+            <div class="message-info">
+              <p><i class="fas fa-info-circle"></i> نکات مهم:</p>
+              <ul>
+                <li>
+                  حداکثر 160 کاراکتر برای هر پیامک (در صورت بیشتر شدن، پیامک به
+                  چند بخش تقسیم می‌شود).
+                </li>
+                <li>
+                  در صورت استفاده از کاراکترهای خاص (مانند ایموجی)، ممکن است
+                  محدودیت کاراکتر کمتر شود.
+                </li>
+                <li>
+                  متن پیامک ذخیره و در ارسال‌های بعدی نیز نمایش داده می‌شود.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <!-- تب تنظیمات -->
+          <div id="settings-tab" class="tab-pane active">
+            <div class="form-group">
+              <label><i class="fas fa-user"></i> نام کاربری</label>
+              <input type="text" id="username" placeholder="نام کاربری" />
+            </div>
+
+            <div class="form-group">
+              <label><i class="fas fa-key"></i> رمز عبور</label>
+              <input type="password" id="password" placeholder="رمز عبور" />
+            </div>
+
+            <div class="form-group">
+              <label><i class="fas fa-phone"></i> شماره مبدا</label>
+              <input type="text" id="src-address" placeholder="شماره مبدا" />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fas fa-clock"></i> تاخیر (ثانیه)</label>
+                <input type="number" id="interval" min="1" max="60" />
+              </div>
+
+              <div class="form-group">
+                <label
+                  ><i class="fas fa-layer-group"></i> تعداد در هر دسته</label
+                >
+                <input
+                  type="number"
+                  id="batch-size"
+                  value="250"
+                  min="1"
+                  max="500"
+                />
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn btn-primary" onclick="startSending()">
+                <i class="fas fa-play"></i> شروع ارسال
+              </button>
+              <button
+                class="btn btn-danger"
+                onclick="stopSending()"
+                id="stop-btn"
+                disabled
+              >
+                <i class="fas fa-stop"></i> توقف
+              </button>
+              <button class="btn btn-secondary" onclick="testConnection()">
+                <i class="fas fa-wifi"></i> تست اتصال
+              </button>
+            </div>
+          </div>
+
+          <!-- تب شماره‌ها -->
+          <div id="numbers-tab" class="tab-pane">
+            <div class="form-group">
+              <label
+                ><i class="fas fa-list-ol"></i> شماره‌ها (هر شماره در یک
+                خط)</label
+              >
+              <textarea
+                id="numbers-text"
+                rows="10"
+                placeholder="09123456789&#10;09129876543&#10;..."
+              ></textarea>
+            </div>
+
+            <div class="file-actions">
+              <div class="file-upload">
+                <input
+                  type="file"
+                  id="file-input"
+                  accept=".txt"
+                  style="display: none"
+                />
+                <button
+                  class="btn btn-secondary"
+                  onclick="document.getElementById('file-input').click()"
+                >
+                  <i class="fas fa-upload"></i> آپلود فایل
+                </button>
+                <span id="file-info"></span>
+              </div>
+
+              <div class="file-downloads">
+                <button
+                  class="btn btn-outline"
+                  onclick="downloadFile('remaining')"
+                >
+                  <i class="fas fa-download"></i> دانلود باقیمانده
+                </button>
+                <button
+                  class="btn btn-outline"
+                  onclick="downloadFile('processed')"
+                >
+                  <i class="fas fa-download"></i> دانلود ارسال شده
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- تب گزارشات -->
+          <div id="logs-tab" class="tab-pane">
+            <div class="logs-container">
+              <div class="logs-header">
+                <h3><i class="fas fa-history"></i> تاریخچه عملیات</h3>
+                <button class="btn btn-small" onclick="clearLogs()">
+                  <i class="fas fa-trash"></i> پاک کردن
+                </button>
+              </div>
+              <div class="logs-list" id="logs-list">
+                <!-- لاگ‌ها اینجا نمایش داده می‌شوند -->
+                <div class="log-entry">در حال بارگذاری...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+        <div class="progress-text">
+          <span id="progress-text">0%</span>
+        </div>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+  </body>
+</html>
